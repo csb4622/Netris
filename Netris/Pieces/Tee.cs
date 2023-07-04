@@ -52,4 +52,9 @@ public class Tee : Piece
         }
         return CellOffsets;
     }
+    
+    public override Piece Clone()
+    {
+        return new Tee();
+    }
 }

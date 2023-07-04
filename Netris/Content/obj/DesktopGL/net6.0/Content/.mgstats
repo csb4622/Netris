@@ -1,2 +1,3 @@
 Source File,Dest File,Processor Type,Content Type,Source File Size,Dest File Size,Build Seconds
-"C:/Users/Admin/RiderProjects/Netris/Netris/Content/Sheet.png","C:/Users/Admin/RiderProjects/Netris/Netris/Content/bin/DesktopGL/Content/Sheet.xnb","TextureProcessor","Texture2DContent",251,4181,0.1162827
+"C:/Users/Admin/RiderProjects/Netris/Netris/Content/Block.spritefont","C:/Users/Admin/RiderProjects/Netris/Netris/Content/bin/DesktopGL/Content/Block.xnb","FontDescriptionProcessor","SpriteFontContent",2065,21535,0.2033497
+"C:/Users/Admin/RiderProjects/Netris/Netris/Content/Sheet.png","C:/Users/Admin/RiderProjects/Netris/Netris/Content/bin/DesktopGL/Content/Sheet.xnb","TextureProcessor","Texture2DContent",1113,41045,0.1169126

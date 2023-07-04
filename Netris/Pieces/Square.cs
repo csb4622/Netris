@@ -23,4 +23,9 @@ public class Square : Piece
             new Point(0, 0)
         };
     }
+    
+    public override Piece Clone()
+    {
+        return new Square();
+    }
 }

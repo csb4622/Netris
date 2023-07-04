@@ -4,9 +4,11 @@
   <Platform>DesktopGL</Platform>
   <Config />
   <SourceFiles>
+    <File>C:/Users/Admin/RiderProjects/Netris/Netris/Content/Block.spritefont</File>
     <File>C:/Users/Admin/RiderProjects/Netris/Netris/Content/Sheet.png</File>
   </SourceFiles>
   <DestFiles>
+    <File xsi:nil="true" />
     <File xsi:nil="true" />
   </DestFiles>
 </SourceFileCollection>

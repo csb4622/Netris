@@ -12,6 +12,7 @@ public class FallingPiece
     private IDictionary<int, IList<int>> _cellsByWidth;
     private int _currentRotation;
     private readonly Piece _piece;
+    private bool _switchedForHold;
         
     public int MinY { get; private set; }
     public int MaxY { get; private set; }
@@ -21,6 +22,7 @@ public class FallingPiece
 
     public FallingPiece(Piece piece)
     {
+        _switchedForHold = false;
         _piece = piece;
         _currentRotation = 0;
         _cellsById = new Dictionary<int, PieceCell>(4);
@@ -28,6 +30,16 @@ public class FallingPiece
         _cellsByWidth = new Dictionary<int, IList<int>>(4);
     }
 
+    public void SetSwitchForHold(bool newValue)
+    {
+        _switchedForHold = newValue;
+    }
+    
+    public bool CanSwitchForHold()
+    {
+        return !_switchedForHold;
+    }
+    
     public PieceCell[] GetCurrentCells()
     {
         return _cellsById.Values.ToArray();
@@ -37,6 +49,11 @@ public class FallingPiece
         return _currentRotation;
     }
 
+    public Piece GetPiece()
+    {
+        return _piece;
+    }
+    
     public void SetRotation(int rotation)
     {
         _currentRotation = rotation;
@@ -83,15 +100,15 @@ public class FallingPiece
             widthList.Remove(y);
         }
     }
-    public void MoveCell(int number, int oldId, int oldX, int oldY, int newId, int newX, int newY, Color color)
+    public void MoveCell(int number, int oldId, int oldX, int oldY, int newId, int newX, int newY, Color color, Vector2 textureOffset)
     {
         RemoveCell(oldId, oldX, oldY);
-        AddCell(number, newId, newX, newY, color);
+        AddCell(number, newId, newX, newY, color, textureOffset);
     }
 
-    public void AddCell(int number, int id, int x, int y, Color color)
+    public void AddCell(int number, int id, int x, int y, Color color, Vector2 textureOffset)
     {
-        _cellsById[id] = new PieceCell(number, id, new Point(x, y), color);
+        _cellsById[id] = new PieceCell(number, id, new Point(x, y), color, textureOffset);
 
         if (_cellsByHeight.ContainsKey(y))
         {
@@ -136,12 +153,14 @@ public struct PieceCell
     public int Id { get; }
     public Point Point { get; }
     public Color Color { get; }
+    public Vector2 TextureOffset { get; }
 
-    public PieceCell(int number, int id, Point point, Color color)
+    public PieceCell(int number, int id, Point point, Color color, Vector2 textureOffset)
     {
         Number = number;
         Id = id;
         Point = point;
         Color = color;
+        TextureOffset = textureOffset;
     }
 }

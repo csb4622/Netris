@@ -52,4 +52,9 @@ public class LeftEll : Piece
         }
         return CellOffsets;
     }    
+    
+    public override Piece Clone()
+    {
+        return new LeftEll();
+    }
 }

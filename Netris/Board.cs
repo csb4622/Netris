@@ -21,6 +21,8 @@ public class Board
     private readonly int _ySpawn;
 
     private FallingPiece? _fallingPiece;
+    private Piece? _nextPiece;
+    private Piece? _holdPiece;
 
     private int _fallSpeed;
     private int _currentFallTimer;
@@ -65,19 +67,8 @@ public class Board
         _xSpawn = (_playAreaOffsetX - 1) + ((((_playAreaOffsetX + _playAreaDimensions.Width)) - _playAreaOffsetX) / 2);
         _ySpawn = _playAreaOffsetY;
         
+        CreateBoarders();
 
-         for (var x = _playAreaOffsetX-1; x <= _playAreaOffsetX+_playAreaDimensions.Width; ++x)
-         {
-             SetCell(x, _playAreaOffsetY-1, Color.White );
-             SetCell(x, ((_playAreaOffsetY-1)+_playAreaDimensions.Height+1), Color.White );
-         }
-         for (var y = _playAreaOffsetY; y < _playAreaOffsetY+_playAreaDimensions.Height; ++y)
-         {
-             SetCell(_playAreaOffsetX-1, y, Color.White);
-             SetCell(((_playAreaOffsetX-1)+_playAreaDimensions.Width+1), y, Color.White);
-         } 
-        
-        
     }
 
     public Rectangle Dimensions => _dimensions;
@@ -104,9 +95,61 @@ public class Board
     {
         return _area[y * _dimensions.Width + x].Color.HasValue ? _area[y * _dimensions.Width + x].Color : null;
     }
+    public Vector2? GetTextureOffset(int x, int y)
+    {
+        return _area[y * _dimensions.Width + x].TextureOffset.HasValue ? _area[y * _dimensions.Width + x].TextureOffset : null;
+    }
 
+    private void CreateBoarders()
+    {
+        for (var x = _playAreaOffsetX-1; x <= _playAreaOffsetX+_playAreaDimensions.Width; ++x)
+        {
+            SetCell(x, _playAreaOffsetY-1, Color.White, Vector2.Zero );
+            SetCell(x, ((_playAreaOffsetY-1)+_playAreaDimensions.Height+1), Color.White, Vector2.Zero );
+        }
+        for (var y = _playAreaOffsetY; y < _playAreaOffsetY+_playAreaDimensions.Height; ++y)
+        {
+            SetCell(_playAreaOffsetX-1, y, Color.White, Vector2.Zero);
+            SetCell(((_playAreaOffsetX-1)+_playAreaDimensions.Width+1), y, Color.White, Vector2.Zero);
+        }
 
+        for (var holdX = -2; holdX >= -8; --holdX)
+        {
+            SetCell(_playAreaOffsetX+holdX, _playAreaOffsetY-1, Color.White, Vector2.Zero);
+            SetCell(_playAreaOffsetX+holdX, _playAreaOffsetY+1, Color.White, Vector2.Zero);
+            SetCell(_playAreaOffsetX+holdX, _playAreaOffsetY+8, Color.White, Vector2.Zero);
+        }
+        
+        for (var nextX = 1; nextX < 8; ++nextX)
+        {
+            SetCell(_playAreaOffsetX+_playAreaDimensions.Width+nextX, _playAreaOffsetY-1, Color.White, Vector2.Zero);
+            SetCell(_playAreaOffsetX+_playAreaDimensions.Width+nextX, _playAreaOffsetY+1, Color.White, Vector2.Zero);
+            SetCell(_playAreaOffsetX+_playAreaDimensions.Width+nextX, _playAreaOffsetY+8, Color.White, Vector2.Zero);
+        }
 
+        for (var y = 0; y < 9; ++y)
+        {
+            SetCell(_playAreaOffsetX-8, _playAreaOffsetY-1 + y, Color.White, Vector2.Zero);
+            SetCell(_playAreaOffsetX+_playAreaDimensions.Width+7, _playAreaOffsetY-1 + y, Color.White, Vector2.Zero);
+        }
+
+        SetCell(_playAreaOffsetX-7, _playAreaOffsetY, Color.LightBlue, Vector2.Zero);
+        for (var x = -6; x < -2; ++x)
+        {
+            var offsetX = ((x + 6) * _cellSize)+_cellSize;
+            SetCell(_playAreaOffsetX+x, _playAreaOffsetY, Color.LightBlue, new Vector2(offsetX, 0));
+        }
+        SetCell(_playAreaOffsetX-2, _playAreaOffsetY, Color.LightBlue, Vector2.Zero);
+        
+        SetCell(_playAreaOffsetX+_playAreaDimensions.Width+1, _playAreaOffsetY, Color.PaleVioletRed, Vector2.Zero);
+        for (var x = 2; x < 6; ++x)
+        {
+            var offsetX = ((x - 2) * _cellSize)+_cellSize;
+            SetCell(_playAreaOffsetX+_playAreaDimensions.Width+x, _playAreaOffsetY, Color.PaleVioletRed, new Vector2(offsetX, _cellSize));
+        }
+        SetCell(_playAreaOffsetX+_playAreaDimensions.Width+6, _playAreaOffsetY, Color.PaleVioletRed, Vector2.Zero);        
+        
+    }
     private void ResetData()
     {
         _bypassFallTimer = false;
@@ -138,14 +181,64 @@ public class Board
                 {
                     _bypassFallTimer = true;
                 }
+                if (keyboard.IsKeyDown(Keys.Space))
+                {
+                    SwitchPieceForHold();
+                }                
             }
         }
     }
+
+    private void SwitchPieceForHold()
+    {
+        if (_fallingPiece != null && _fallingPiece.CanSwitchForHold())
+        {
+            if (_holdPiece == null)
+            {
+                _holdPiece = _fallingPiece.GetPiece().Clone();
+                ClearFallingPiece();
+                GetNextPiece();
+
+            }
+            else
+            {
+                var oldHoldPiece = _holdPiece;
+                _holdPiece = _fallingPiece.GetPiece().Clone();
+                ClearFallingPiece();
+                SpawnPiece(oldHoldPiece.Clone());
+
+            }
+            _fallingPiece.SetSwitchForHold(true);
+            UpdateHoldArea();
+        }
+    }
+
+    public void ClearFallingPiece()
+    {
+        var cells = _fallingPiece.GetCurrentCells();
+        for (var i = 0; i < cells.Length; ++i)
+        {
+            RemoveCell(cells[i].Point.X, cells[i].Point.Y);
+        }
+        _fallingPiece = null;
+    }
+    
+    private void GetNextPiece()
+    {
+        if (_nextPiece == null)
+        {
+            _nextPiece = GetRandomPiece();
+        }
+        SpawnPiece(_nextPiece.Clone());
+        _nextPiece = GetRandomPiece();
+        UpdateNextArea();
+    }
+    
     private void PlayFrame(int milliseconds, KeyboardState keyboard)
     {
         if (_fallingPiece == null)
         {
-            SpawnPiece();
+            GetNextPiece();
         }
         else
         {
@@ -158,6 +251,56 @@ public class Board
                 _currentFallTimer = 0;
                 MovePieceDown();
             }
+        }
+    }
+
+    private void ClearNextArea()
+    {
+        for (var y = 2; y < 8; ++y)
+        {
+            for (var x = 11; x < 17; ++x)
+            {
+                RemoveCell(_playAreaOffsetX+x, _playAreaOffsetY+y);
+            }   
+        }
+    }
+
+    private void UpdateNextArea()
+    {
+        ClearNextArea();
+        var offsets = _nextPiece.CellOffsets;
+        var startX = _playAreaOffsetX+14;
+        var startY = _playAreaOffsetY+3;
+        for (var i = 0; i < offsets.Length; ++i)
+        {
+            var x = startX + offsets[i].X;
+            var y = startY + offsets[i].Y;
+            SetCell(x, y, _nextPiece.Color, Vector2.Zero);
+        }
+    }
+
+    private void ClearHoldArea()
+    {
+        for (var y = 2; y < 8; ++y)
+        {
+            for (var x = -7; x < -1; ++x)
+            {
+                RemoveCell(_playAreaOffsetX+x, _playAreaOffsetY+y);
+            }   
+        }
+    }
+
+    private void UpdateHoldArea()
+    {
+        ClearHoldArea();
+        var offsets = _holdPiece.CellOffsets;
+        var startX = _playAreaOffsetX-6;
+        var startY = _playAreaOffsetY+3;
+        for (var i = 0; i < offsets.Length; ++i)
+        {
+            var x = startX + offsets[i].X;
+            var y = startY + offsets[i].Y;
+            SetCell(x, y, _holdPiece.Color, Vector2.Zero);
         }
     }
     private void ClearRows()
@@ -209,8 +352,9 @@ public class Board
                 {
                     var id = y * _dimensions.Width + x;
                     var color = GetColor(x, y);
+                    var textureOffset = GetTextureOffset(x, y);
                     RemoveCell(x, y);
-                    SetCell(x, y + 1, color!.Value);
+                    SetCell(x, y + 1, color!.Value, textureOffset!.Value);
                 }
             }
         }
@@ -249,10 +393,11 @@ public class Board
         _area[y * _dimensions.Width + x].IsOccupied = false;
     }
     
-    private void SetCell(int x, int y, Color color)
+    private void SetCell(int x, int y, Color color, Vector2 textureOffset)
     {
         _area[y * _dimensions.Width + x].IsOccupied = true;
         _area[y * _dimensions.Width + x].Color = color;
+        _area[y * _dimensions.Width + x].TextureOffset = textureOffset;
     }
     
     private void TurnPiece()
@@ -298,8 +443,8 @@ public class Board
                 var newY = oldY + offsets[currentCells[i].Number].Y;
                 var newId = newY * _dimensions.Width + newX;
 
-                SetCell(newX, newY, currentCells[i].Color);
-                _fallingPiece.AddCell(currentCells[i].Number, newId, newX, newY, currentCells[i].Color);
+                SetCell(newX, newY, currentCells[i].Color, currentCells[i].TextureOffset);
+                _fallingPiece.AddCell(currentCells[i].Number, newId, newX, newY, currentCells[i].Color, currentCells[i].TextureOffset);
             }
             _fallingPiece.SetRotation(newRotation);
         }
@@ -335,10 +480,11 @@ public class Board
                     var id = cellY * _dimensions.Width + x;
                     var pieceCell = _fallingPiece.GetPieceCellById(id);
                     var color = GetColor(x, cellY);
+                    var textureOffset = GetTextureOffset(x, cellY);
                     RemoveCell(x, cellY);
-                    SetCell(x+1, cellY, color!.Value);
+                    SetCell(x+1, cellY, color!.Value, textureOffset!.Value);
                     _fallingPiece.MoveCell(pieceCell.Value.Number, id, x, cellY,
-                        cellY * _dimensions.Width + (x+1), x+1, cellY, color.Value);
+                        cellY * _dimensions.Width + (x+1), x+1, cellY, color.Value, textureOffset.Value);
                 }
             }
         }
@@ -374,10 +520,11 @@ public class Board
                     var id = cellY * _dimensions.Width + x;
                     var pieceCell = _fallingPiece.GetPieceCellById(id);
                     var color = GetColor(x, cellY);
+                    var textureOffset = GetTextureOffset(x, cellY);
                     RemoveCell(x, cellY);
-                    SetCell(x-1, cellY, color!.Value);
+                    SetCell(x-1, cellY, color!.Value, textureOffset!.Value);
                     _fallingPiece.MoveCell(pieceCell.Value.Number, id, x, cellY,
-                        cellY * _dimensions.Width + (x-1), x-1, cellY, color.Value);
+                        cellY * _dimensions.Width + (x-1), x-1, cellY, color.Value, textureOffset.Value);
                 }
             }
         }
@@ -413,10 +560,11 @@ public class Board
                     var id = y * _dimensions.Width + fallingCellX;
                     var pieceCell = _fallingPiece.GetPieceCellById(id);
                     var color = GetColor(fallingCellX, y);
+                    var textureOffset = GetTextureOffset(fallingCellX, y);
                     RemoveCell(fallingCellX, y);
-                    SetCell(fallingCellX, y + 1, color!.Value);
+                    SetCell(fallingCellX, y + 1, color!.Value, textureOffset!.Value);
                     _fallingPiece.MoveCell(pieceCell.Value.Number, id, fallingCellX, y,
-                        (y + 1) * _dimensions.Width + fallingCellX, fallingCellX, y + 1, color.Value);
+                        (y + 1) * _dimensions.Width + fallingCellX, fallingCellX, y + 1, color.Value, textureOffset.Value);
                 }
             }
         }
@@ -426,39 +574,36 @@ public class Board
             CheckForClearableRows();
         }
     }
-    
-    private void SpawnPiece()
+
+    private Piece GetRandomPiece()
     {
-        var nextPiece = 3;//Random.Shared.Next(0, 7);
+        var nextPiece = Random.Shared.Next(0, 7);
         Piece? piece = null;
 
         switch (nextPiece)
         {
             case 0:
-                piece = new Bar();
-                break;
+                return new Bar();
             case 1:
-                piece = new LeftEll();
-                break;
+                return new LeftEll();
             case 2:
-                piece = new RightEll();
-                break;
+                return new RightEll();
             case 3:
-                piece = new Square();
-                break;
+                return new Square();
             case 4:
-                piece = new RightStair();
-                break;
+                return new RightStair();
             case 5:
-                piece = new Tee();
-                break;
+                return new Tee();
+                
             case 6:
-                piece = new LeftStair();
-                break;
+                return new LeftStair();
+                
             default:
-                return;
+                return new Square();
         }
-
+    }
+    private void SpawnPiece(Piece piece)
+    {
         _fallingPiece = new FallingPiece(piece);
 
         var offsets = piece.CellOffsets;
@@ -473,8 +618,8 @@ public class Board
             }
             else
             {
-                _fallingPiece.AddCell(i, y*_dimensions.Width+x,  x, y, piece.Color);
-                SetCell(x, y, piece.Color);
+                _fallingPiece.AddCell(i, y*_dimensions.Width+x,  x, y, piece.Color, Vector2.Zero);
+                SetCell(x, y, piece.Color, Vector2.Zero);
             }
         }
 

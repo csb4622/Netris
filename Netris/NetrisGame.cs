@@ -11,6 +11,8 @@ public class NetrisGame : Game
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch;
 
+    private SpriteFont _font;
+
     public NetrisGame()
     {
         this.Window.Title = "Netris";
@@ -39,6 +41,7 @@ public class NetrisGame : Game
 
         // TODO: use this.Content to load your game content here
         _atlas = TextureManager.Current.GetTexture("Sheet");
+        _font = Content.Load<SpriteFont>("Block");
     }
 
     protected override void Update(GameTime gameTime)
@@ -74,21 +77,16 @@ public class NetrisGame : Game
             {
                 if (_gameBoard.IsOccupied(x, y))
                 {
-                    _spriteBatch.Draw(_atlas, new Vector2(x*_gameBoard.CellSize, y*_gameBoard.CellSize), _gameBoard.GetColor(x, y)!.Value );
+                    _spriteBatch.Draw(
+                        _atlas,
+                        new Vector2(x*_gameBoard.CellSize, y*_gameBoard.CellSize),
+                        new Rectangle(new Point((int)_gameBoard.GetTextureOffset(x,y)!.Value.X, (int)_gameBoard.GetTextureOffset(x,y)!.Value.Y), new Point(32)),
+                        _gameBoard.GetColor(x, y)!.Value );
                 }
             }
         }
-
-        // _spriteBatch.Draw(_cell, new Vector2(5*32, 7*32), Color.LimeGreen );
-        // _spriteBatch.Draw(_cell, new Vector2(4*32, 7*32), Color.LimeGreen );
-        // _spriteBatch.Draw(_cell, new Vector2(4*32, 8*32), Color.LimeGreen );
-        // _spriteBatch.Draw(_cell, new Vector2(3*32, 8*32), Color.LimeGreen );            
-        //
-        // _spriteBatch.Draw(_cell, new Vector2(6*32, 7*32), Color.Red );
-        // _spriteBatch.Draw(_cell, new Vector2(7*32, 7*32), Color.Red );
-        // _spriteBatch.Draw(_cell, new Vector2(7*32, 8*32), Color.Red );
-        // _spriteBatch.Draw(_cell, new Vector2(8*32, 8*32), Color.Red );
-        //
+        
+        _spriteBatch.DrawString(_font, "HOLD", Vector2.One, Color.Blue);
 
 
         _spriteBatch.End();

@@ -52,4 +52,9 @@ public class LeftStair : Piece
         }
         return CellOffsets;
     }     
+    
+    public override Piece Clone()
+    {
+        return new LeftStair();
+    }
 }
