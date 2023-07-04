@@ -86,7 +86,9 @@ public class NetrisGame : Game
             }
         }
         
-        _spriteBatch.DrawString(_font, "HOLD", Vector2.One, Color.Blue);
+        _spriteBatch.DrawString(_font, _gameBoard.Score.ToString(), _gameBoard.ScoreLocation, Color.Blue);
+        _spriteBatch.DrawString(_font, _gameBoard.LinesCleared.ToString(), _gameBoard.LinesLocation, Color.Blue);
+        _spriteBatch.DrawString(_font, _gameBoard.Level.ToString(), _gameBoard.LevelLocation, Color.Blue);
 
 
         _spriteBatch.End();

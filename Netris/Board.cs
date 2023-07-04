@@ -13,6 +13,10 @@ public class Board
     private readonly Cell[] _area;
     private readonly Rectangle _dimensions;
     private readonly Rectangle _playAreaDimensions;
+    private Vector2 _scoreLocation;
+    private Vector2 _linesLocation;
+    private Vector2 _levelLocation;
+    private Vector2 _defaultTextureOffset;
     private readonly int _playAreaOffsetX;
     private readonly int _playAreaOffsetY;
     private readonly int _cellSize;
@@ -41,6 +45,7 @@ public class Board
 
     public Board(int cellSize)
     {
+        _defaultTextureOffset = Vector2.Zero;
         _fallingPiece = null;
         _currentFallTimer = 0;
         _fallSpeed = 1000;
@@ -74,6 +79,12 @@ public class Board
     public Rectangle Dimensions => _dimensions;
     public int CellSize => _cellSize;
     public BoardState State => _state;
+    public Vector2 ScoreLocation => _scoreLocation;
+    public Vector2 LinesLocation => _linesLocation;
+    public Vector2 LevelLocation => _levelLocation;
+    public int Score => _score;
+    public int LinesCleared => _linesCleared;
+    public int Level => _level;
 
     
     public void Update(GameTime gameTime, KeyboardState keyboard)
@@ -100,8 +111,12 @@ public class Board
         return _area[y * _dimensions.Width + x].TextureOffset.HasValue ? _area[y * _dimensions.Width + x].TextureOffset : null;
     }
 
+
+    
+    
     private void CreateBoarders()
     {
+        // Create outer wall
         for (var x = _playAreaOffsetX-1; x <= _playAreaOffsetX+_playAreaDimensions.Width; ++x)
         {
             SetCell(x, _playAreaOffsetY-1, Color.White, Vector2.Zero );
@@ -113,6 +128,8 @@ public class Board
             SetCell(((_playAreaOffsetX-1)+_playAreaDimensions.Width+1), y, Color.White, Vector2.Zero);
         }
 
+        
+        // Create Hold Area
         for (var holdX = -2; holdX >= -8; --holdX)
         {
             SetCell(_playAreaOffsetX+holdX, _playAreaOffsetY-1, Color.White, Vector2.Zero);
@@ -120,6 +137,8 @@ public class Board
             SetCell(_playAreaOffsetX+holdX, _playAreaOffsetY+8, Color.White, Vector2.Zero);
         }
         
+        
+        // Create Next Area
         for (var nextX = 1; nextX < 8; ++nextX)
         {
             SetCell(_playAreaOffsetX+_playAreaDimensions.Width+nextX, _playAreaOffsetY-1, Color.White, Vector2.Zero);
@@ -133,21 +152,53 @@ public class Board
             SetCell(_playAreaOffsetX+_playAreaDimensions.Width+7, _playAreaOffsetY-1 + y, Color.White, Vector2.Zero);
         }
 
-        SetCell(_playAreaOffsetX-7, _playAreaOffsetY, Color.LightBlue, Vector2.Zero);
+        // Create Hold Text
+        SetCell(_playAreaOffsetX-7, _playAreaOffsetY, Color.Aqua, Vector2.Zero);
         for (var x = -6; x < -2; ++x)
         {
             var offsetX = ((x + 6) * _cellSize)+_cellSize;
-            SetCell(_playAreaOffsetX+x, _playAreaOffsetY, Color.LightBlue, new Vector2(offsetX, 0));
+            SetCell(_playAreaOffsetX+x, _playAreaOffsetY, Color.Aqua, new Vector2(offsetX, 0));
         }
-        SetCell(_playAreaOffsetX-2, _playAreaOffsetY, Color.LightBlue, Vector2.Zero);
+        SetCell(_playAreaOffsetX-2, _playAreaOffsetY, Color.Aqua, Vector2.Zero);
         
-        SetCell(_playAreaOffsetX+_playAreaDimensions.Width+1, _playAreaOffsetY, Color.PaleVioletRed, Vector2.Zero);
+        
+        // Create Next Text
+        SetCell(_playAreaOffsetX+_playAreaDimensions.Width+1, _playAreaOffsetY, Color.Red, Vector2.Zero);
         for (var x = 2; x < 6; ++x)
         {
             var offsetX = ((x - 2) * _cellSize)+_cellSize;
-            SetCell(_playAreaOffsetX+_playAreaDimensions.Width+x, _playAreaOffsetY, Color.PaleVioletRed, new Vector2(offsetX, _cellSize));
+            SetCell(_playAreaOffsetX+_playAreaDimensions.Width+x, _playAreaOffsetY, Color.Red, new Vector2(offsetX, _cellSize));
         }
-        SetCell(_playAreaOffsetX+_playAreaDimensions.Width+6, _playAreaOffsetY, Color.PaleVioletRed, Vector2.Zero);        
+        SetCell(_playAreaOffsetX+_playAreaDimensions.Width+6, _playAreaOffsetY, Color.Red, Vector2.Zero);  
+        
+        
+        // Create Stats Area
+        for(var x= -10; x < 0; ++x)
+        {
+            SetCell(_playAreaOffsetX+x, _playAreaDimensions.Height-5, Color.White, Vector2.Zero);
+            SetCell(_playAreaOffsetX+x, _playAreaDimensions.Height-3, Color.White, Vector2.Zero);
+            SetCell(_playAreaOffsetX+x, _playAreaDimensions.Height-1, Color.White, Vector2.Zero);
+            SetCell(_playAreaOffsetX+x, _playAreaDimensions.Height+1, Color.White, Vector2.Zero);
+        }
+
+        for (var y = -5; y < 2; ++y)
+        {
+            SetCell(_playAreaOffsetX-11, _playAreaDimensions.Height+y, Color.White, Vector2.Zero);
+        }
+        // Stats Text
+        {
+            for (var x = -10; x < -5; ++x)
+            {
+                var offsetX = ((x+10) * _cellSize);
+                SetCell(_playAreaOffsetX+x, _playAreaDimensions.Height-4, Color.Yellow, new Vector2(offsetX, _cellSize*2));
+                SetCell(_playAreaOffsetX+x, _playAreaDimensions.Height-2, Color.LimeGreen, new Vector2(offsetX, _cellSize*3));
+                SetCell(_playAreaOffsetX+x, _playAreaDimensions.Height, Color.MediumPurple, new Vector2(offsetX, _cellSize*4));
+            }
+
+            _scoreLocation = new Vector2((_playAreaOffsetX-5)*_cellSize+8, (_playAreaDimensions.Height-4)*_cellSize);
+            _linesLocation = new Vector2((_playAreaOffsetX-5)*_cellSize+8, (_playAreaDimensions.Height-2)*_cellSize);
+            _levelLocation = new Vector2((_playAreaOffsetX-5)*_cellSize+8, (_playAreaDimensions.Height)*_cellSize);
+        }
         
     }
     private void ResetData()
@@ -213,7 +264,7 @@ public class Board
         }
     }
 
-    public void ClearFallingPiece()
+    private void ClearFallingPiece()
     {
         var cells = _fallingPiece.GetCurrentCells();
         for (var i = 0; i < cells.Length; ++i)
@@ -246,7 +297,7 @@ public class Board
             HandleInputs(milliseconds, keyboard);
 
             _currentFallTimer += milliseconds;
-            if (_bypassFallTimer || _currentFallTimer > _fallSpeed)
+            if (_bypassFallTimer || _currentFallTimer > (_fallSpeed-(_level*5)))
             {
                 _currentFallTimer = 0;
                 MovePieceDown();
@@ -275,7 +326,7 @@ public class Board
         {
             var x = startX + offsets[i].X;
             var y = startY + offsets[i].Y;
-            SetCell(x, y, _nextPiece.Color, Vector2.Zero);
+            SetCell(x, y, _nextPiece.Color, _defaultTextureOffset);
         }
     }
 
@@ -300,7 +351,7 @@ public class Board
         {
             var x = startX + offsets[i].X;
             var y = startY + offsets[i].Y;
-            SetCell(x, y, _holdPiece.Color, Vector2.Zero);
+            SetCell(x, y, _holdPiece.Color, _defaultTextureOffset);
         }
     }
     private void ClearRows()
@@ -335,11 +386,35 @@ public class Board
             _score += 100*_clearingRows.Count;
             _clearingPieces.Clear();
             _clearingRows.Clear();
+            _level = (_linesCleared / 10)+1;
+            if (_level > 10 && _defaultTextureOffset.Y == 0)
+            {
+                for (var y = _playAreaOffsetY; y < _playAreaDimensions.Height; ++y)
+                {
+                    for (var x = _playAreaOffsetX; x < _playAreaDimensions.Width; ++x)
+                    {
+                        if (IsOccupied(x, y))
+                        {
+                            SetTextureOffset(x, y, new Vector2(0, _cellSize));
+                        }
+                    }
+                }
+                SetDefaultTextureOffset(new Vector2(0, _cellSize));
+            }
         }
     }
     private void SetColor(int x, int y, Color color)
     {
         _area[y * _dimensions.Width + x].Color = color;
+    }
+    private void SetTextureOffset(int x, int y, Vector2 textureOffset)
+    {
+        _area[y * _dimensions.Width + x].TextureOffset = textureOffset;
+    }
+
+    private void SetDefaultTextureOffset(Vector2 textureOffset)
+    {
+        _defaultTextureOffset = textureOffset;
     }
 
     private void MoveRowsDown(int stopRowIndex)
@@ -618,8 +693,8 @@ public class Board
             }
             else
             {
-                _fallingPiece.AddCell(i, y*_dimensions.Width+x,  x, y, piece.Color, Vector2.Zero);
-                SetCell(x, y, piece.Color, Vector2.Zero);
+                _fallingPiece.AddCell(i, y*_dimensions.Width+x,  x, y, piece.Color, _defaultTextureOffset);
+                SetCell(x, y, piece.Color, _defaultTextureOffset);
             }
         }
 
