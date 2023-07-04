@@ -8,15 +8,11 @@ public class NetrisGame : Game
 {
     private Board _gameBoard;
     private Texture2D _atlas;
-    private readonly int _boardWidthOffset;
-    private readonly int _boardHeightOffset;
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch;
 
     public NetrisGame()
     {
-        _boardHeightOffset = 0;
-        _boardWidthOffset = 5 * 32;
         this.Window.Title = "Netris";
         _graphics = new GraphicsDeviceManager(this);
         Content.RootDirectory = "Content";
@@ -28,10 +24,10 @@ public class NetrisGame : Game
         // TODO: Add your initialization logic here
         TextureManager.Current.Initialize(this.Content);
         
-        _gameBoard = new Board(32, 12, 22);
+        _gameBoard = new Board(32);
 
-        _graphics.PreferredBackBufferWidth = 22 * 32;
-        _graphics.PreferredBackBufferHeight = 24 * 32;
+        _graphics.PreferredBackBufferWidth = 32 * 32;
+        _graphics.PreferredBackBufferHeight = 22 * 32;
         _graphics.ApplyChanges();
         
         base.Initialize();
@@ -71,16 +67,14 @@ public class NetrisGame : Game
 
         // TODO: Add your drawing code here
         _spriteBatch.Begin();
-
-        _spriteBatch.Draw(_atlas, new Vector2((_gameBoard.CellSize*-1)+_boardWidthOffset, (_gameBoard.CellSize*1)+_boardHeightOffset), Color.White);
         
-        for (var y = 0; y < _gameBoard.PlayAreaDimensions.Height; ++y)
+        for (var y = 0; y < _gameBoard.Dimensions.Height; ++y)
         {
-            for (var x = 0; x < _gameBoard.PlayAreaDimensions.Width; ++x)
+            for (var x = 0; x < _gameBoard.Dimensions.Width; ++x)
             {
                 if (_gameBoard.IsOccupied(x, y))
                 {
-                    _spriteBatch.Draw(_atlas, new Vector2((x*_gameBoard.CellSize)+_boardWidthOffset, (y*_gameBoard.CellSize)+_boardHeightOffset), _gameBoard.GetColor(x, y)!.Value );
+                    _spriteBatch.Draw(_atlas, new Vector2(x*_gameBoard.CellSize, y*_gameBoard.CellSize), _gameBoard.GetColor(x, y)!.Value );
                 }
             }
         }
