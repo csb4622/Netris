@@ -4,6 +4,7 @@ namespace Netris.Pieces;
 
 public class Tee : Piece
 {
+    public override Point DisplayOffset => new Point(-2, 1);
     public override Color Color => Color.MediumPurple;
     public override Point[] CellOffsets => new[]
     {

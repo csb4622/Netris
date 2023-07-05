@@ -4,6 +4,7 @@ namespace Netris.Pieces;
 
 public class RightEll : Piece
 {
+    public override Point DisplayOffset => new Point(-1, 0);
     public override Color Color => Color.Orange;
     public override Point[] CellOffsets => new[]
     {

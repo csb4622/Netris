@@ -5,9 +5,13 @@
   <Config />
   <SourceFiles>
     <File>C:/Users/Admin/RiderProjects/Netris/Netris/Content/Block.spritefont</File>
+    <File>C:/Users/Admin/RiderProjects/Netris/Netris/Content/Game.mp3</File>
+    <File>C:/Users/Admin/RiderProjects/Netris/Netris/Content/Menu.mp3</File>
     <File>C:/Users/Admin/RiderProjects/Netris/Netris/Content/Sheet.png</File>
   </SourceFiles>
   <DestFiles>
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />
   </DestFiles>

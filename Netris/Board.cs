@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
+using Microsoft.Xna.Framework.Media;
 using Netris.Pieces;
 using Rectangle = System.Drawing.Rectangle;
 
@@ -27,6 +28,7 @@ public class Board
     private FallingPiece? _fallingPiece;
     private Piece? _nextPiece;
     private Piece? _holdPiece;
+    private int? _lastPiece;
 
     private int _fallSpeed;
     private int _currentFallTimer;
@@ -42,6 +44,8 @@ public class Board
     private readonly IList<int> _clearingRows;
     private readonly int _clearSpeed;
     
+    private Song? _menuSong;
+    private Song? _gameSong;
 
     public Board(int cellSize)
     {
@@ -60,7 +64,7 @@ public class Board
         _currentInputTimer = 0;
         
 
-        _state = BoardState.Playing;
+        _state = BoardState.Ready;
         _cellSize = cellSize;
         _dimensions = new Rectangle(0, 0, 32, 22);
         _playAreaDimensions = new Rectangle(0, 0, 10, 20);
@@ -76,6 +80,14 @@ public class Board
 
     }
 
+    public void Initialize(Song menuSong, Song gameSong)
+    {
+        _menuSong = menuSong;
+        _gameSong = gameSong;
+
+        MediaPlayer.Play(_menuSong);
+    }
+
     public Rectangle Dimensions => _dimensions;
     public int CellSize => _cellSize;
     public BoardState State => _state;
@@ -87,16 +99,53 @@ public class Board
     public int Level => _level;
 
     
-    public void Update(GameTime gameTime, KeyboardState keyboard)
+    public void Update(GameTime gameTime)
     {
-        if (_state == BoardState.Clearing)
+        if (_state is BoardState.Ready or BoardState.Trapped)
+        { ;
+            if (Keyboard.HasBeenPressed(Keys.Enter))
+            {
+                _state = BoardState.Playing;
+                ResetBoard();
+                MediaPlayer.Stop();
+                MediaPlayer.Play(_gameSong);
+            }
+        }
+        if (_state == BoardState.Paused)
+        {
+            if (Keyboard.HasBeenPressed(Keys.Enter))
+            {
+                _state = BoardState.Playing;
+                MediaPlayer.Resume();
+            }
+        }        
+        else if (_state == BoardState.Clearing)
         {
             ClearRows();
         }
         else if (_state == BoardState.Playing)
         {
-           PlayFrame(gameTime.ElapsedGameTime.Milliseconds, keyboard);
+           PlayFrame(gameTime.ElapsedGameTime.Milliseconds);
         }
+    }
+
+    public void ResetBoard()
+    {
+        _fallingPiece = null;
+        _holdPiece = null;
+        _nextPiece = null;
+        _lastPiece = null;
+        
+        _defaultTextureOffset = Vector2.Zero;
+        _currentFallTimer = 0;
+        _level = 1;
+        _score = 0;
+        _linesCleared = 0;
+        _currentInputTimer = 0;
+        
+        ClearHoldArea();
+        ClearNextArea();
+        ClearPlayArea();
     }
     public bool IsOccupied(int x, int y)
     {
@@ -110,9 +159,6 @@ public class Board
     {
         return _area[y * _dimensions.Width + x].TextureOffset.HasValue ? _area[y * _dimensions.Width + x].TextureOffset : null;
     }
-
-
-    
     
     private void CreateBoarders()
     {
@@ -205,37 +251,47 @@ public class Board
     {
         _bypassFallTimer = false;
     }
-    private void HandleInputs(int milliseconds, KeyboardState keyboard)
+    private void HandleInputs(int milliseconds)
     {
+        if (Keyboard.HasBeenPressed(Keys.Enter))
+        {
+            _state = BoardState.Paused;
+            MediaPlayer.Pause();
+            return;
+        }
+
+        if (_fallingPiece != null)
+        {
+            if (Keyboard.HasBeenPressed(Keys.Up))
+            {
+                TurnPiece();
+            }
+            if (Keyboard.HasBeenPressed(Keys.Space))
+            {
+                SwitchPieceForHold();
+            }
+        }
+        
         _currentInputTimer += milliseconds;
         if (_currentInputTimer > _inputWait)
         {
             _currentInputTimer = 0;
             if (_fallingPiece != null)
             {
-                if (keyboard.IsKeyDown(Keys.Up))
-                {
-                    TurnPiece();
-                }
-
-                if (keyboard.IsKeyDown(Keys.Left))
+                if (Keyboard.IsPressed(Keys.Left))
                 {
                     MovePieceLeft();
                 }
 
-                if (keyboard.IsKeyDown(Keys.Right))
+                if (Keyboard.IsPressed(Keys.Right))
                 {
                     MovePieceRight();
                 }
 
-                if (keyboard.IsKeyDown(Keys.Down))
+                if (Keyboard.IsPressed(Keys.Down))
                 {
                     _bypassFallTimer = true;
                 }
-                if (keyboard.IsKeyDown(Keys.Space))
-                {
-                    SwitchPieceForHold();
-                }                
             }
         }
     }
@@ -285,7 +341,7 @@ public class Board
         UpdateNextArea();
     }
     
-    private void PlayFrame(int milliseconds, KeyboardState keyboard)
+    private void PlayFrame(int milliseconds)
     {
         if (_fallingPiece == null)
         {
@@ -294,7 +350,7 @@ public class Board
         else
         {
             ResetData();
-            HandleInputs(milliseconds, keyboard);
+            HandleInputs(milliseconds);
 
             _currentFallTimer += milliseconds;
             if (_bypassFallTimer || _currentFallTimer > (_fallSpeed-(_level*5)))
@@ -316,12 +372,26 @@ public class Board
         }
     }
 
+    private void ClearPlayArea()
+    {
+        for (var y = _playAreaOffsetY; y < _playAreaOffsetY+_playAreaDimensions.Height; ++y)
+        {
+            for (var x = _playAreaOffsetX; x < _playAreaOffsetX+_playAreaDimensions.Width; ++x)
+            {
+                if (IsOccupied(x, y))
+                {
+                    RemoveCell(x, y);
+                }
+            }
+        }
+    }
+
     private void UpdateNextArea()
     {
         ClearNextArea();
         var offsets = _nextPiece.CellOffsets;
-        var startX = _playAreaOffsetX+14;
-        var startY = _playAreaOffsetY+3;
+        var startX = (_playAreaOffsetX+_nextPiece.DisplayOffset.X)+14;
+        var startY = (_playAreaOffsetY+_nextPiece.DisplayOffset.Y)+3;
         for (var i = 0; i < offsets.Length; ++i)
         {
             var x = startX + offsets[i].X;
@@ -345,8 +415,8 @@ public class Board
     {
         ClearHoldArea();
         var offsets = _holdPiece.CellOffsets;
-        var startX = _playAreaOffsetX-6;
-        var startY = _playAreaOffsetY+3;
+        var startX = (_playAreaOffsetX + _holdPiece.DisplayOffset.X)-4;
+        var startY = (_playAreaOffsetY + _holdPiece.DisplayOffset.Y)+3;
         for (var i = 0; i < offsets.Length; ++i)
         {
             var x = startX + offsets[i].X;
@@ -389,19 +459,44 @@ public class Board
             _level = (_linesCleared / 10)+1;
             if (_level > 10 && _defaultTextureOffset.Y == 0)
             {
-                for (var y = _playAreaOffsetY; y < _playAreaDimensions.Height; ++y)
-                {
-                    for (var x = _playAreaOffsetX; x < _playAreaDimensions.Width; ++x)
-                    {
-                        if (IsOccupied(x, y))
-                        {
-                            SetTextureOffset(x, y, new Vector2(0, _cellSize));
-                        }
-                    }
-                }
-                SetDefaultTextureOffset(new Vector2(0, _cellSize));
+                SetTextures(new Vector2(0, _cellSize));
             }
         }
+    }
+
+    private void SetTextures(Vector2 newTextureOffset)
+    {
+        for (var y = _playAreaOffsetY; y < _playAreaOffsetY+_playAreaDimensions.Height; ++y)
+        {
+            for (var x = _playAreaOffsetX; x < _playAreaOffsetX+_playAreaDimensions.Width; ++x)
+            {
+                if (IsOccupied(x, y))
+                {
+                    SetTextureOffset(x, y, newTextureOffset);
+                }
+            }
+        }
+        for (var y = 2; y < 8; ++y)
+        {
+            for (var x = -7; x < -1; ++x)
+            {
+                if (IsOccupied(_playAreaOffsetX+x, _playAreaOffsetY+y))
+                {
+                    SetTextureOffset(_playAreaOffsetX+x, _playAreaOffsetY+y, newTextureOffset);
+                }
+            }   
+        }
+        for (var y = 2; y < 8; ++y)
+        {
+            for (var x = 11; x < 17; ++x)
+            {
+                if (IsOccupied(_playAreaOffsetX+x, _playAreaOffsetY+y))
+                {
+                    SetTextureOffset(_playAreaOffsetX+x, _playAreaOffsetY+y, newTextureOffset);
+                }
+            }
+        }
+        SetDefaultTextureOffset(newTextureOffset);        
     }
     private void SetColor(int x, int y, Color color)
     {
@@ -653,6 +748,13 @@ public class Board
     private Piece GetRandomPiece()
     {
         var nextPiece = Random.Shared.Next(0, 7);
+        
+        while (nextPiece == _lastPiece)
+        {
+            nextPiece = Random.Shared.Next(0, 7);
+        }
+
+        _lastPiece = nextPiece;
         Piece? piece = null;
 
         switch (nextPiece)
@@ -689,6 +791,8 @@ public class Board
             if (IsOccupied(x, y))
             {
                 _state = BoardState.Trapped;
+                MediaPlayer.Stop();
+                MediaPlayer.Play(_menuSong);
                 return;
             }
             else

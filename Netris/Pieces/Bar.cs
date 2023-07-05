@@ -5,6 +5,8 @@ namespace Netris.Pieces;
 public class Bar : Piece
 {
     public override Color Color => Color.Aqua;
+    
+    public override Point DisplayOffset => Point.Zero;
     public override Point[] CellOffsets => new[]
     {
         new Point(0, 0),

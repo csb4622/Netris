@@ -4,6 +4,7 @@ namespace Netris.Pieces;
 
 public class RightStair : Piece
 {
+    public override Point DisplayOffset => new Point(0, 1);
     public override Color Color => Color.LimeGreen;
     public override Point[] CellOffsets => new[]
     {

@@ -20,6 +20,18 @@
 /processorParam:TextureFormat=Compressed
 /build:Block.spritefont
 
+#begin Game.mp3
+/importer:Mp3Importer
+/processor:SongProcessor
+/processorParam:Quality=Best
+/build:Game.mp3
+
+#begin Menu.mp3
+/importer:Mp3Importer
+/processor:SongProcessor
+/processorParam:Quality=Best
+/build:Menu.mp3
+
 #begin Sheet.png
 /importer:TextureImporter
 /processor:TextureProcessor
