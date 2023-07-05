@@ -118,9 +118,9 @@ public class NetrisGame : Game
                 }
             }
 
-            _spriteBatch.DrawString(_font, _gameBoard.Score.ToString(), _gameBoard.ScoreLocation, Color.Blue);
-            _spriteBatch.DrawString(_font, _gameBoard.LinesCleared.ToString(), _gameBoard.LinesLocation, Color.Blue);
-            _spriteBatch.DrawString(_font, _gameBoard.Level.ToString(), _gameBoard.LevelLocation, Color.Blue);
+            _spriteBatch.DrawString(_font, _gameBoard.Score.ToString(), _gameBoard.ScoreLocation, Color.LightYellow);
+            _spriteBatch.DrawString(_font, _gameBoard.LinesCleared.ToString(), _gameBoard.LinesLocation, Color.LightGreen);
+            _spriteBatch.DrawString(_font, _gameBoard.Level.ToString(), _gameBoard.LevelLocation, Color.MediumPurple);
         }
 
         _spriteBatch.End();
